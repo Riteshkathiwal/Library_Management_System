@@ -48,9 +48,11 @@ export const showError = (title, text) => {
   });
 };
 
-export default {
+const alertUtils = {
   confirmDelete,
   confirmAction,
   showSuccess,
   showError,
 };
+
+export default alertUtils;

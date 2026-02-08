@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../config/axios';
 import API_URLS from '../../config/ApiUrl';
-import { useAuth } from '../../context/AuthContext';
 
 const EditUser = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser } = useAuth();
     const [loading, setLoading] = useState(true);
     const [roles, setRoles] = useState([]);
     const [formData, setFormData] = useState({
@@ -20,12 +18,7 @@ const EditUser = () => {
         is_active: true
     });
 
-    useEffect(() => {
-        fetchUser();
-        fetchRoles();
-    }, [id]);
-
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async () => {
         try {
             const response = await axiosInstance.get(API_URLS.USER_BY_ID(id));
             const user = response.data.data;
@@ -43,16 +36,21 @@ const EditUser = () => {
             toast.error('Failed to load user data');
             navigate('/users');
         }
-    };
+    }, [id, navigate]);
 
-    const fetchRoles = async () => {
+    const fetchRoles = useCallback(async () => {
         try {
             const response = await axiosInstance.get(API_URLS.ROLES);
             setRoles(response.data.data || []);
         } catch (error) {
             console.error('Error fetching roles:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchUser();
+        fetchRoles();
+    }, [fetchUser, fetchRoles]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -78,7 +78,7 @@ export const STORAGE_KEYS = {
   THEME: 'library_theme',
 };
 
-export default {
+const CONFIG_CONSTANTS = {
   APP_NAME,
   API_BASE_URL,
   MODULES,
@@ -86,3 +86,5 @@ export default {
   ROLES,
   STORAGE_KEYS,
 };
+
+export default CONFIG_CONSTANTS;
