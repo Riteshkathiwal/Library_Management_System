@@ -106,6 +106,7 @@ const Books = () => {
                   <th>Title</th>
                   <th>ISBN</th>
                   <th>Author</th>
+                  <th>Publisher</th> 
                   <th>Category</th>
                   <th>Quantity</th>
                   <th>Available</th>
@@ -128,6 +129,7 @@ const Books = () => {
                       <td><strong>{book.title}</strong></td>
                       <td>{book.isbn}</td>
                       <td>{book.author_id?.name || 'N/A'}</td>
+                      <td>{book.publisher_id?.name}</td>
                       <td>
                         <span className="badge bg-info">
                           {book.category_id?.name || 'N/A'}
