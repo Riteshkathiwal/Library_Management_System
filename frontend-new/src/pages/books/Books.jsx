@@ -102,11 +102,11 @@ const Books = () => {
             <table className="table table-hover">
                 <thead>
                 <tr>
-                  <th>S.Nooo</th>
+                  <th>S.No</th>
                   <th>Title</th>
                   <th>ISBN</th>
                   <th>Author</th>
-                  <th>name </th> 
+                  <th>Publisher</th> 
                   <th>Category</th>
                   <th>Quantity</th>
                   <th>Available</th>
