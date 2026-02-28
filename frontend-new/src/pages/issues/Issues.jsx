@@ -42,7 +42,8 @@ const Issues = () => {
   const fetchBooks = async () => {
     try {
       const response = await bookService.getAll();
-      setBooks(response.data || []);
+      // response now contains { books: [...], pagination: {...} }
+      setBooks(response.books || []);
     } catch (error) {
       console.error('Error fetching books:', error);
     }
