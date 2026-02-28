@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import bookService from '../../services/bookService';
@@ -10,20 +10,35 @@ const Books = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const itemsPerPage = 10;
   const { hasPermission } = useAuth();
 
   useEffect(() => {
-    fetchBooks();
-  }, []);
+    fetchBooks(searchTerm, currentPage);
+  }, [currentPage, searchTerm]);
 
-  const fetchBooks = async (search = '') => {
+  const fetchBooks = async (search = '', page = 1) => {
     try {
       setLoading(true);
-      const params = search ? { search } : {};
+      const params = {
+        page,
+        limit: itemsPerPage,
+        ...(search && { search }),
+      };
       const response = await bookService.getAll(params);
+
+      // response now holds { books: [...], pagination: { total, page, pages } }
       setBooks(response.books || []);
+      const total = response.pagination?.total || 0;
+      const pages = response.pagination?.pages || 1;
+      setTotalBooks(total);
+      setTotalPages(pages);
     } catch (error) {
       console.error('Error fetching books:', error);
+      toast.error('Failed to fetch books');
     } finally {
       setLoading(false);
     }
@@ -31,7 +46,7 @@ const Books = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchBooks(searchTerm);
+    setCurrentPage(1);
   };
 
   const handleDelete = async (id) => {
@@ -40,10 +55,16 @@ const Books = () => {
       try {
         await bookService.delete(id);
         toast.success('Book deleted successfully!');
-        fetchBooks(searchTerm);
+        fetchBooks(searchTerm, currentPage);
       } catch (error) {
         console.error('Error deleting book:', error);
       }
+    }
+  };
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
     }
   };
 
@@ -54,6 +75,9 @@ const Books = () => {
       </div>
     );
   }
+
+  const startIndex = (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = Math.min(currentPage * itemsPerPage, totalBooks);
 
   return (
     <div className="container-fluid">
@@ -100,13 +124,13 @@ const Books = () => {
         <div className="card-body">
           <div className="table-responsive">
             <table className="table table-hover">
-                <thead>
+              <thead>
                 <tr>
                   <th>S.No</th>
                   <th>Title</th>
                   <th>ISBN</th>
                   <th>Author</th>
-                  <th>Publisher</th> 
+                  <th>Publisher</th>
                   <th>Category</th>
                   <th>Quantity</th>
                   <th>Available</th>
@@ -118,14 +142,14 @@ const Books = () => {
               <tbody>
                 {books.length === 0 ? (
                   <tr>
-                    <td colSpan={(hasPermission(PERMISSIONS.BOOK_UPDATE) || hasPermission(PERMISSIONS.BOOK_DELETE)) ? "8" : "7"} className="text-center text-muted py-4">
+                    <td colSpan={(hasPermission(PERMISSIONS.BOOK_UPDATE) || hasPermission(PERMISSIONS.BOOK_DELETE)) ? "9" : "8"} className="text-center text-muted py-4">
                       No books found
                     </td>
                   </tr>
                 ) : (
                   books.map((book, index) => (
                     <tr key={book._id}>
-                      <td>{index + 1}</td>
+                      <td>{startIndex + index}</td>
                       <td><strong>{book.title}</strong></td>
                       <td>{book.isbn}</td>
                       <td>{book.author_id?.name || 'N/A'}</td>
@@ -144,11 +168,6 @@ const Books = () => {
                       {(hasPermission(PERMISSIONS.BOOK_UPDATE) || hasPermission(PERMISSIONS.BOOK_DELETE)) && (
                         <td>
                           <div className="d-flex gap-2">
-                            {/* View page not implemented yet
-                            <Link to={`/books/${book._id}`} className="btn btn-outline-info" title="View">
-                              <i className="bi bi-eye"></i>
-                            </Link>
-                            */}
                             {hasPermission(PERMISSIONS.BOOK_UPDATE) && (
                               <Link to={`/books/edit/${book._id}`} className="btn btn-outline-primary" title="Edit">
                                 <i className="bi bi-pencil"></i>
@@ -167,6 +186,34 @@ const Books = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="d-flex justify-content-between align-items-center mt-3">
+            <small className="text-muted">
+              Showing {startIndex} to {endIndex} of {totalBooks} books
+            </small>
+            <nav>
+              <ul className="pagination mb-0">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+                    Previous
+                  </button>
+                </li>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(page)}>
+                      {page}
+                    </button>
+                  </li>
+                ))}
+                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
           </div>
         </div>
       </div>
