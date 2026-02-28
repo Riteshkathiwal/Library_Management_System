@@ -78,10 +78,15 @@ export const STORAGE_KEYS = {
   THEME: 'library_theme',
 };
 
+export const ROLES_ID ={
+  "member_id": "6988d67496214faa3114f423"
+}
+
 const CONFIG_CONSTANTS = {
   APP_NAME,
   API_BASE_URL,
   MODULES,
+  ROLES_ID,
   PERMISSIONS,
   ROLES,
   STORAGE_KEYS,

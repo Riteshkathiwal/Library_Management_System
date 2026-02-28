@@ -7,6 +7,9 @@ import { confirmAction } from '../../utils/sweetAlert';
 import { formValidator } from '../../utils/validation';
 import { MODULES, PERMISSIONS } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
+import { ROLES_ID } from '../../constants';
+
+
 
 const Issues = () => {
   const [issues, setIssues] = useState([]);
@@ -52,6 +55,9 @@ const Issues = () => {
   const fetchMembers = async () => {
     try {
       const response = await userService.getAll();
+
+      console.log("memeber data..", response.data);
+
       setMembers(response.data || []);
     } catch (error) {
       console.error('Error fetching members:', error);
@@ -175,9 +181,9 @@ const Issues = () => {
                   </tr>
                 ) : (
                   issues.map((issue, index) => (
-                    <tr key={issue._id}>
+                    <tr key={issue._id.name}>
                       <td>{index + 1}</td>
-                      <td>{issue.member_id?.name || 'N/A'}</td>
+                      <td>{issue.member_id?.user_id?.name || 'N/A'}</td>
                       <td><strong>{issue.book_id?.title || 'N/A'}</strong></td>
                       <td>{formatDate(issue.issue_date)}</td>
                       <td>{formatDate(issue.due_date)}</td>
@@ -232,11 +238,15 @@ const Issues = () => {
                       value={formData.member_id}
                       onChange={handleInputChange}
                     >
-                      <option value="">Select Member</option>
-                      {members.map((member) => (
-                        <option key={member._id} value={member._id}>
-                          {member.name} ({member.email})
-                        </option>
+
+<option value="">Select Member</option>
+{members.map((member) => (
+  member.role_id?.role_name === "member" && (
+    <option key={member._id} value={member._id}>
+      {member.name} ({member.email})
+
+                          </option>
+                        )
                       ))}
                     </select>
                     {errors.member_id && <div className="invalid-feedback">{errors.member_id}</div>}

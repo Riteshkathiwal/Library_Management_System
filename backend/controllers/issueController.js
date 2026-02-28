@@ -10,21 +10,30 @@ import { successResponse, errorResponse } from "../utils/responseHandler.js";
 // @access  Private (Librarian/Admin)
 export const issueBook = async (req, res, next) => {
   try {
-    const { member_id, book_id } = req.body;
+    let { member_id, book_id } = req.body;
 
     // 1. Check if member exists and can issue
-    const member = await Member.findById(member_id);
+    const member = await Member.find({ user_id: member_id });
     if (!member) return errorResponse(res, "Member not found", 404);
+
+    member_id = member[0]._id;
+
 
     if (member.is_blocked) {
       return errorResponse(res, "Member is blocked from issuing books", 400);
     }
 
+    console.log(
+      "Member current_books_issued:",
+      member.current_books_issued,
+      "Max allowed:",
+      member.max_books_allowed,
+    );
     if (member.current_books_issued >= member.max_books_allowed) {
       return errorResponse(
         res,
         `Member has reached maximum limit of ${member.max_books_allowed} books`,
-        400
+        400,
       );
     }
 
@@ -36,13 +45,23 @@ export const issueBook = async (req, res, next) => {
       return errorResponse(res, "Book is not available", 400);
     }
 
-    // 3. Get system settings for due date
+    // 3. Get system settings for due date safely
     let maxDays = 14; // Default
     const setting = await SystemSetting.findOne({ key: "max_issue_days" });
-    if (setting) maxDays = parseInt(setting.return_value);
+    if (setting) {
+      const parsedDays = parseInt(setting.return_value);
+      if (!isNaN(parsedDays)) {
+        maxDays = parsedDays;
+      } else {
+        console.warn(
+          "SystemSetting max_issue_days invalid, using default 14 days",
+        );
+      }
+    }
 
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + maxDays);
+    console.log("Calculated dueDate:", dueDate);
 
     // 4. Create Issue Record
     const issue = await Issue.create({
@@ -58,22 +77,22 @@ export const issueBook = async (req, res, next) => {
     await book.save();
 
     // 6. Update Member stats
-    member.current_books_issued += 1;
-    await member.save();
+    member[0].current_books_issued += 1;
+    await member[0].save();
 
     successResponse(res, issue, "Book issued successfully", 201);
   } catch (err) {
+    console.error("Error issuing book:", err);
     next(err);
   }
 };
-
 // @desc    Return a book
 // @route   PUT /api/issues/:id/return
 // @access  Private (Librarian/Admin)
 export const returnBook = async (req, res, next) => {
   try {
     const issue = await Issue.findById(req.params.id);
-    
+
     if (!issue) return errorResponse(res, "Issue record not found", 404);
     if (issue.status !== "issued" && issue.status !== "overdue") {
       return errorResponse(res, "Book is already returned", 400);
@@ -107,15 +126,17 @@ export const returnBook = async (req, res, next) => {
       });
 
       issue.fine_id = fine._id;
-      
+
       // Update Member fines
       const member = await Member.findById(issue.member_id);
       member.total_fines_pending += fineAmount;
       // Check for block
       let maxFine = 500;
-      const blockSetting = await SystemSetting.findOne({ key: "max_fine_before_block" });
+      const blockSetting = await SystemSetting.findOne({
+        key: "max_fine_before_block",
+      });
       if (blockSetting) maxFine = parseInt(blockSetting.return_value);
-      
+
       if (member.total_fines_pending > maxFine) {
         member.is_blocked = true;
       }
@@ -132,7 +153,10 @@ export const returnBook = async (req, res, next) => {
     // 3. Update Member stats
     const member = await Member.findById(issue.member_id);
     if (member) {
-      member.current_books_issued = Math.max(0, member.current_books_issued - 1);
+      member.current_books_issued = Math.max(
+        0,
+        member.current_books_issued - 1,
+      );
       await member.save();
     }
 
@@ -163,13 +187,19 @@ export const getAllIssues = async (req, res, next) => {
     }
 
     if (overdue === "true") {
-       query.due_date = { $lt: new Date() };
-       query.status = "issued";
+      query.due_date = { $lt: new Date() };
+      query.status = "issued";
     }
 
     const issues = await Issue.find(query)
       .populate("book_id", "title isbn")
-      .populate("member_id", "member_id")
+      .populate({
+        path: "member_id",
+        populate: {
+          path: "user_id",
+          select: "name",
+        },
+      })
       .populate("issued_by", "name")
       .sort("-issue_date");
 
