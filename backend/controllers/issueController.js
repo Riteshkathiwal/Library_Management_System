@@ -22,13 +22,6 @@ export const issueBook = async (req, res, next) => {
     if (member.is_blocked) {
       return errorResponse(res, "Member is blocked from issuing books", 400);
     }
-
-    console.log(
-      "Member current_books_issued:",
-      member.current_books_issued,
-      "Max allowed:",
-      member.max_books_allowed,
-    );
     if (member.current_books_issued >= member.max_books_allowed) {
       return errorResponse(
         res,
@@ -61,7 +54,6 @@ export const issueBook = async (req, res, next) => {
 
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + maxDays);
-    console.log("Calculated dueDate:", dueDate);
 
     // 4. Create Issue Record
     const issue = await Issue.create({

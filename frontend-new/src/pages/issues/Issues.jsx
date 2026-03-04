@@ -181,7 +181,7 @@ const Issues = () => {
                   </tr>
                 ) : (
                   issues.map((issue, index) => (
-                    <tr key={issue._id.name}>
+                    <tr key={issue._id}>
                       <td>{index + 1}</td>
                       <td>{issue.member_id?.user_id?.name || 'N/A'}</td>
                       <td><strong>{issue.book_id?.title || 'N/A'}</strong></td>

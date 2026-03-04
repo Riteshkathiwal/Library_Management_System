@@ -97,7 +97,6 @@ const importData = async () => {
       },
     ]);
 
-    console.log("Data Imported!".green.inverse);
     process.exit();
   } catch (err) {
     console.error(`${err}`.red.inverse);
@@ -112,7 +111,6 @@ const destroyData = async () => {
     await SystemSetting.deleteMany();
     // Add other deletions here if needed
 
-    console.log("Data Destroyed!".red.inverse);
     process.exit();
   } catch (err) {
     console.error(`${err}`.red.inverse);
